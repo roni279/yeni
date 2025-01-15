@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>İşlem Geçmişi</h2>
+        <button id="temizle-btn" class="btn btn-danger">
+            <i class="bi bi-trash"></i> İşlem Geçmişini Temizle
+        </button>
+    </div>
+    
+    <!-- Yeni İşlem Formu -->
+    <form id="islem-form" class="mb-4" onsubmit="return false;">
+        <div class="row">
+            <div class="col-md-2">
+                <input type="text" class="form-control" id="sembol" list="hisse-listesi" placeholder="Sembol" required>
+                <datalist id="hisse-listesi">
+                    {% for hisse in hisseler %}
+                    <option value="{{ hisse.sembol }}" data-sirket="{{ hisse.sirket_adi }}" data-sektor="{{ hisse.sektor_adi }}">
+                        {{ hisse.sirket_adi }} ({{ hisse.sektor_adi }})
+                    </option>
+                    {% endfor %}
+                </datalist>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="grup_adi" required>
+                    <option value="">Grup Seçin</option>
+                    <option value="UZUN_VADE_1">Uzun Vade 1</option>
+                    <option value="UZUN_VADE_2">Uzun Vade 2</option>
+                    <option value="TRADE">Trade</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-control" id="islem_tipi" required>
+                    <option value="ALIM">Alım</option>
+                    <option value="SATIM">Satım</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control" id="miktar" placeholder="Miktar" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" step="0.01" class="form-control" id="fiyat" placeholder="Fiyat" required>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="guncelle-btn">
+                    <i class="bi bi-arrow-clockwise"></i> Fiyat Güncelle
+                </button>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">İşlem Ekle</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- İşlem Geçmişi -->
+    <ul class="nav nav-tabs mb-3" id="islemTabs">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#tum">
+                Tüm İşlemler
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#UZUN_VADE_1">
+                Uzun Vade 1
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#UZUN_VADE_2">
+                Uzun Vade 2
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#TRADE">
+                Trade
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Tüm İşlemler -->
+        <div class="tab-pane fade show active" id="tum">
+            {% if islemler.shape[0] == 0 %}
+            <p class="text-muted">Henüz işlem yapılmamış.</p>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Grup</th>
+                            <th>Hisse</th>
+                            <th>İşlem Tipi</th>
+                            <th>Adet</th>
+                            <th>Fiyat (TL)</th>
+                            <th>Toplam (TL)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for index, islem in islemler.iterrows() %}
+                        <tr>
+                            <td>{{ islem.tarih.strftime('%d.%m.%Y %H:%M') if islem.tarih else '-' }}</td>
+                            <td>{{ islem.grup_adi }}</td>
+                            <td>{{ islem.sembol }}</td>
+                            <td>
+                                <span class="badge {% if islem.islem_tipi == 'ALIM' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ islem.islem_tipi }}
+                                </span>
+                            </td>
+                            <td>{{ islem.miktar }}</td>
+                            <td>{{ "%.2f"|format(islem.fiyat) }}</td>
+                            <td>{{ "%.2f"|format(islem.toplam_tutar) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Grup Bazlı İşlemler -->
+        {% for grup in ['UZUN_VADE_1', 'UZUN_VADE_2', 'TRADE'] %}
+        <div class="tab-pane fade" id="{{ grup }}">
+            {% set grup_islemler = islemler[islemler.grup_adi.fillna('') == grup] %}
+            {% if grup_islemler.empty %}
+            <p class="text-muted">Bu grupta henüz işlem yapılmamış.</p>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Hisse</th>
+                            <th>İşlem Tipi</th>
+                            <th>Adet</th>
+                            <th>Fiyat (TL)</th>
+                            <th>Toplam (TL)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for index, islem in grup_islemler.iterrows() %}
+                        <tr>
+                            <td>{{ islem.tarih.strftime('%d.%m.%Y %H:%M') if islem.tarih else '-' }}</td>
+                            <td>{{ islem.sembol }}</td>
+                            <td>
+                                <span class="badge {% if islem.islem_tipi == 'ALIM' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ islem.islem_tipi }}
+                                </span>
+                            </td>
+                            <td>{{ islem.miktar }}</td>
+                            <td>{{ "%.2f"|format(islem.fiyat) }}</td>
+                            <td>{{ "%.2f"|format(islem.toplam_tutar) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bootstrap tabları otomatik olarak çalışacak
+    const triggerTabList = [].slice.call(document.querySelectorAll('#islemTabs a'));
+    triggerTabList.forEach(function(triggerEl) {
+        new bootstrap.Tab(triggerEl);
+    });
+
+    // Form submit olayını dinle
+    const form = document.getElementById('islem-form');
+    let isSubmitting = false;
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Eğer form zaten gönderiliyorsa, yeni gönderimi engelle
+        if (isSubmitting) return;
+        
+        // Form gönderim başlangıcı
+        isSubmitting = true;
+        
+        // Submit butonunu devre dışı bırak
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        
+        const data = {
+            sembol: document.getElementById('sembol').value.toUpperCase(),
+            grup_adi: document.getElementById('grup_adi').value,
+            islem_tipi: document.getElementById('islem_tipi').value,
+            miktar: document.getElementById('miktar').value,
+            fiyat: document.getElementById('fiyat').value
+        };
+        
+        try {
+            const response = await fetch('/islem_ekle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                form.reset();
+                location.reload();
+            } else {
+                alert('İşlem eklenirken bir hata oluştu!');
+            }
+        } catch (error) {
+            console.error('Hata:', error);
+            alert('İşlem eklenirken bir hata oluştu!');
+        } finally {
+            isSubmitting = false;
+            submitButton.disabled = false;
+        }
+    });
+
+    // İşlem geçmişi temizleme
+    document.getElementById('temizle-btn').addEventListener('click', async function() {
+        if (!confirm('Tüm işlem geçmişi silinecek. Emin misiniz?')) {
+            return;
+        }
+        
+        const button = this;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Temizleniyor...';
+        
+        try {
+            const response = await fetch('/islem_gecmisi_temizle', {
+                method: 'POST'
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('İşlem geçmişi başarıyla temizlendi');
+                location.reload();
+            } else {
+                alert('Hata: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Hata:', error);
+            alert('İşlem geçmişi temizlenirken bir hata oluştu!');
+        } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-trash"></i> İşlem Geçmişini Temizle';
+        }
+    });
+
+    // Sembol değiştiğinde fiyat çek
+    document.getElementById('sembol').addEventListener('change', async function() {
+        const sembol = this.value.toUpperCase();
+        if (sembol) {
+            try {
+                const response = await fetch(`/hisse_bilgi/${sembol}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('fiyat').value = data.fiyat;
+                }
+            } catch (error) {
+                console.error('Fiyat çekme hatası:', error);
+            }
+        }
+    });
+
+    // Fiyat güncelleme butonu
+    document.getElementById('guncelle-btn').addEventListener('click', async function() {
+        const sembol = document.getElementById('sembol').value.toUpperCase();
+        if (sembol) {
+            // Tek bir hisse için güncelleme
+            try {
+                const response = await fetch(`/hisse_bilgi/${sembol}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('fiyat').value = data.fiyat;
+                } else {
+                    alert('Fiyat güncellenirken hata oluştu: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Fiyat çekme hatası:', error);
+                alert('Fiyat güncellenirken bir hata oluştu!');
+            }
+        } else {
+            // Tüm portföy için güncelleme
+            try {
+                const response = await fetch('/portfoy_guncelle?force=1');  // force=1 ile hemen güncelleme
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Tüm portföy fiyatları güncellendi!');
+                    location.reload();  // Sayfayı yenile
+                } else {
+                    alert('Güncelleme hatası: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Portföy güncelleme hatası:', error);
+                alert('Portföy güncellenirken bir hata oluştu!');
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

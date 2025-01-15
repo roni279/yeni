@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Müşteriler{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Müşteriler</h2>
+    
+    <div class="row mb-3">
+        <div class="col">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#yeniMusteriModal">
+                Yeni Müşteri Ekle
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>Telefon</th>
+                    <th>Email</th>
+                    <th>Toplam Yatırım</th>
+                    <th>Net Yatırım</th>
+                    <th>Güncel Değer</th>
+                    <th>Kar/Zarar</th>
+                    <th>Kar/Zarar %</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for musteri in musteriler %}
+                <tr>
+                    <td>{{ musteri.ad_soyad }}</td>
+                    <td>{{ musteri.telefon }}</td>
+                    <td>{{ musteri.email }}</td>
+                    <td>{{ "%.2f"|format(musteri.toplam_yatirim) }} ₺</td>
+                    <td>{{ "%.2f"|format(musteri.net_yatirim) }} ₺</td>
+                    <td>{{ "%.2f"|format(musteri.guncel_deger) }} ₺</td>
+                    <td class="{{ 'text-success' if musteri.kar_zarar > 0 else 'text-danger' }}">
+                        {{ "%.2f"|format(musteri.kar_zarar) }} ₺
+                    </td>
+                    <td class="{{ 'text-success' if musteri.kar_zarar_yuzde > 0 else 'text-danger' }}">
+                        {{ "%.2f"|format(musteri.kar_zarar_yuzde) }}%
+                    </td>
+                    <td>
+                        <a href="{{ url_for('musteri_bilgileri', musteri_id=musteri.id) }}" class="btn btn-sm btn-info">
+                            Detay
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Yeni Müşteri Modal -->
+<div class="modal fade" id="yeniMusteriModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Müşteri Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="musteriForm">
+                    <div class="mb-3">
+                        <label for="adSoyad" class="form-label">Ad Soyad</label>
+                        <input type="text" class="form-control" id="adSoyad" name="ad_soyad" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefon" class="form-label">Telefon</label>
+                        <input type="tel" class="form-control" id="telefon" name="telefon">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" onclick="musteriEkle()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function musteriEkle() {
+    const form = document.getElementById('musteriForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    fetch('/musteri_ekle', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Müşteri eklenirken bir hata oluştu: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu!');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %} 

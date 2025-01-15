@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Hisseler</h2>
+        <div class="d-flex gap-2">
+            <input type="text" class="form-control" id="hisse-ara" list="hisse-listesi" placeholder="Hisse ara...">
+            <datalist id="hisse-listesi">
+                {% for hisse in hisseler %}
+                <option value="{{ hisse.sembol }}" data-sirket="{{ hisse.sirket_adi }}" data-sektor="{{ hisse.sektor_adi }}">
+                    {{ hisse.sirket_adi }} ({{ hisse.sektor_adi }})
+                </option>
+                {% endfor %}
+            </datalist>
+            <button id="bist-ekle" class="btn btn-primary">BIST Hisselerini Ekle</button>
+        </div>
+    </div>
+
+    {% if hisseler %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Sembol</th>
+                    <th>Şirket Adı</th>
+                    <th>Sektör</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hisse in hisseler %}
+                <tr>
+                    <td>{{ hisse.sembol }}</td>
+                    <td>{{ hisse.sirket_adi }}</td>
+                    <td>{{ hisse.sektor_adi }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Henüz hisse eklenmemiş.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('bist-ekle').addEventListener('click', async function() {
+    const button = this;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Yükleniyor...';
+    
+    try {
+        const response = await fetch('/bist_hisseleri_ekle');
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            location.reload();  // Sayfayı yenile
+        } else {
+            alert('Hisseler eklenirken bir hata oluştu!');
+        }
+    } catch (error) {
+        console.error('Hata:', error);
+        alert('Hisseler eklenirken bir hata oluştu!');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = 'BIST Hisselerini Ekle';
+    }
+});
+</script>
+{% endblock %} 

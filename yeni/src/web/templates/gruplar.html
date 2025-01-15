@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>Portföy Grupları</h2>
+        
+        <!-- Yeni Grup Ekleme Formu -->
+        <form id="grup-form" class="mb-4">
+            <div class="row">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="grup_adi" placeholder="Grup Adı" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" class="form-control" id="hedef_oran" placeholder="Hedef Oran (%)" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="aciklama" placeholder="Açıklama">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Grup Ekle</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Grup</th>
+                        <th>Hedef Oran (%)</th>
+                        <th>Gerçek Oran (%)</th>
+                        <th>Toplam Değer</th>
+                        <th>Hisse Dağılımı</th>
+                        <th>Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grup in gruplar %}
+                    <tr>
+                        <td>{{ grup.grup_adi }}</td>
+                        <td>{{ "%.2f"|format(grup.hedef_oran) }}</td>
+                        <td>{{ "%.2f"|format(grup.gercek_oran) if grup.gercek_oran else 0.00 }}</td>
+                        <td>{{ "%.2f"|format(grup.grup_maliyet) if grup.grup_maliyet else 0.00 }}</td>
+                        <td>{{ grup.hisse_dagilimi }}</td>
+                        <td>{{ grup.aciklama }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.getElementById('grup-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        grup_adi: document.getElementById('grup_adi').value.toUpperCase(),
+        hedef_oran: parseFloat(document.getElementById('hedef_oran').value),
+        aciklama: document.getElementById('aciklama').value
+    };
+    
+    fetch('/grup_ekle', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Grup eklenirken bir hata oluştu!');
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% endblock %} 

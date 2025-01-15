@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Pay Değeri Kartı -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Fon Pay Değeri</h5>
+                </div>
+                <div class="card-body">
+                    {% if pay_degeri %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Birim Pay Değeri:</strong></p>
+                            <h3 class="mb-3">{{ "%.4f"|format(pay_degeri.birim_pay_degeri) }} ₺</h3>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Toplam Portföy Değeri:</strong></p>
+                            <h4>{{ "%.2f"|format(pay_degeri.toplam_portfoy_degeri) }} ₺</h4>
+                            <p class="mb-1"><strong>Toplam Pay Adedi:</strong></p>
+                            <h4>{{ "%.4f"|format(pay_degeri.toplam_pay_adedi) }}</h4>
+                        </div>
+                    </div>
+                    <small class="text-muted">Son güncelleme: {{ pay_degeri.tarih }}</small>
+                    {% else %}
+                    <p class="text-center mb-0">Pay değeri bilgisi bulunamadı.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Portföy Durumu</h1>
+        
+        <!-- Tabs -->
+        <div class="mb-4">
+            <button class="tab-style active" onclick="filterPortfolio('ALL')">Tümü</button>
+            <button class="tab-style" onclick="filterPortfolio('UZUN_VADE_1')">Uzun Vade 1</button>
+            <button class="tab-style" onclick="filterPortfolio('UZUN_VADE_2')">Uzun Vade 2</button>
+            <button class="tab-style" onclick="filterPortfolio('TRADE')">Trade</button>
+            <button class="btn btn-outline-primary float-end" onclick="portfoyGuncelle()">
+                <i class="fas fa-sync-alt"></i> Fiyatları Güncelle
+            </button>
+        </div>
+
+        <!-- Portföy İçeriği -->
+        <div class="row">
+            <!-- Hisse Bilgileri (Tam Genişlik) -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="table">
+                                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                                    <tr>
+                                        <th>Hisse</th>
+                                        <th>Adet</th>
+                                        <th>Maliyet</th>
+                                        <th>Güncel</th>
+                                        <th>Kar/Zarar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for hisse in portfoy %}
+                                    <tr data-sembol="{{ hisse.sembol }}" data-grup="{{ hisse.grup_adi }}">
+                                        <td>{{ hisse.sembol }}</td>
+                                        <td>{{ hisse.adet }}</td>
+                                        <td>{{ "%.2f"|format(hisse.maliyet) }} ₺</td>
+                                        <td>{{ "%.2f"|format(hisse.guncel_deger) }} ₺</td>
+                                        <td class="{{ 'text-success' if hisse.kar_zarar > 0 else 'text-danger' }}">
+                                            {{ "%.2f"|format(hisse.kar_zarar) }} ₺
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grafikler (Tam Genişlik) -->
+            <div class="col-12">
+                <div id="tum-portfoy-content">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="ana-portfoy-dagilim"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="uzun-vade-1-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="uzun-vade-1-dagilim"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="uzun-vade-2-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="uzun-vade-2-dagilim"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="trade-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="trade-dagilim"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bakiye Kartları -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Toplam Ana Para</h5>
+                        <h3 class="text-primary">{{ "%.2f"|format(bakiye.toplam_ana_para) }} ₺</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Yatırıma Giden</h5>
+                        <h3 class="text-info">{{ "%.2f"|format(bakiye.yatirima_giden) }} ₺</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Güncel Bakiye</h5>
+                        <h3 class="text-success">{{ "%.2f"|format(bakiye.guncel_bakiye) }} ₺</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function portfoyGuncelle() {
+    try {
+        const response = await fetch('/portfoy_guncelle?force=1');
+        const data = await response.json();
+        
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Güncelleme hatası: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Güncelleme hatası:', error);
+        alert('Portföy güncellenirken bir hata oluştu!');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Portföy dağılım grafiklerini yükle
+    const response = await fetch('/grafik/portfoy_dagilim');
+    const data = await response.json();
+    
+    // Grafik yerleşim ayarlarını ekleyelim
+    const anaLayout = {
+        height: 400,
+        margin: { t: 50, b: 50, l: 50, r: 50 }
+    };
+    
+    const grupLayout = {
+        height: 400,
+        margin: { t: 50, b: 20, l: 20, r: 20 }
+    };
+    
+    // Ana grafik için
+    const anaGrafik = JSON.parse(data.ana_grafik);
+    anaGrafik.layout = {...anaGrafik.layout, ...anaLayout};
+    Plotly.newPlot('ana-portfoy-dagilim', anaGrafik.data, anaGrafik.layout);
+    
+    // Grup grafikleri için
+    if (data.grup_grafikleri.UZUN_VADE_1) {
+        const uzunVade1 = JSON.parse(data.grup_grafikleri.UZUN_VADE_1);
+        uzunVade1.layout = {...uzunVade1.layout, ...grupLayout};
+        Plotly.newPlot('uzun-vade-1-dagilim', uzunVade1.data, uzunVade1.layout);
+    }
+    
+    if (data.grup_grafikleri.UZUN_VADE_2) {
+        const uzunVade2 = JSON.parse(data.grup_grafikleri.UZUN_VADE_2);
+        uzunVade2.layout = {...uzunVade2.layout, ...grupLayout};
+        Plotly.newPlot('uzun-vade-2-dagilim', uzunVade2.data, uzunVade2.layout);
+    }
+    
+    if (data.grup_grafikleri.TRADE) {
+        const trade = JSON.parse(data.grup_grafikleri.TRADE);
+        trade.layout = {...trade.layout, ...grupLayout};
+        Plotly.newPlot('trade-dagilim', trade.data, trade.layout);
+    }
+});
+
+function filterPortfolio(group) {
+    // Önce tüm butonların active sınıfını kaldır
+    document.querySelectorAll('.tab-style').forEach(btn => btn.classList.remove('active'));
+    
+    // Tıklanan butona active sınıfı ekle
+    const clickedButton = event.target;
+    clickedButton.classList.add('active');
+    
+    // Tüm grafik içeriklerini gizle
+    document.getElementById('tum-portfoy-content').style.display = 'none';
+    document.getElementById('uzun-vade-1-content').style.display = 'none';
+    document.getElementById('uzun-vade-2-content').style.display = 'none';
+    document.getElementById('trade-content').style.display = 'none';
+    
+    const rows = document.querySelectorAll('tr[data-sembol]');
+    
+    // Seçilen gruba göre ilgili grafiği göster
+    if (group === 'ALL') {
+        document.getElementById('tum-portfoy-content').style.display = 'block';
+        rows.forEach(row => row.style.display = '');
+    } else {
+        // Grup ID'sini düzgün formata çevir (örn: UZUN_VADE_1 -> uzun-vade-1)
+        const contentId = group.toLowerCase().replace(/_/g, '-') + '-content';
+        document.getElementById(contentId).style.display = 'block';
+        
+        rows.forEach(row => {
+            // data-grup attribute'u tam olarak group değeriyle eşleşmeli
+            if (row.getAttribute('data-grup') === group) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+}
+
+function islemEkle() {
+    const form = document.getElementById('islem-form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    
+    // Submit butonunu devre dışı bırak
+    submitButton.disabled = true;
+    
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+
+    fetch('/islem_ekle', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            form.reset();
+            window.location.href = '/islemler';
+        } else {
+            alert('İşlem eklenirken bir hata oluştu!');
+            // Hata durumunda butonu tekrar aktif et
+            submitButton.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu!');
+        // Hata durumunda butonu tekrar aktif et
+        submitButton.disabled = false;
+    });
+
+    // Form submit'i engelle
+    return false;
+}
+</script>
+{% endblock %} 

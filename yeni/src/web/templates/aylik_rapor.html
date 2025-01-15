@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Aylık Rapor</h2>
+    
+    <!-- Tarih Seçici -->
+    <div class="row mb-4">
+        <div class="col">
+            <form method="GET" class="form-inline">
+                <div class="input-group">
+                    <select name="yil" class="form-select">
+                        {% for yil in yillar %}
+                        <option value="{{ yil }}" {% if yil == secili_yil %}selected{% endif %}>{{ yil }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="ay" class="form-select">
+                        {% for ay in aylar %}
+                        <option value="{{ ay }}" {% if ay == secili_ay %}selected{% endif %}>{{ ay }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary">Göster</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Fon Durumu -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Fon Durumu</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Toplam Maliyet</th>
+                            <th>Ay Başı Değer</th>
+                            <th>Ay Sonu Değer</th>
+                            <th>Kar/Zarar</th>
+                            <th>Kar/Zarar %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not rapor %}
+                        <tr>
+                            <td colspan="5" class="text-center">Bu ay için rapor bulunamadı.</td>
+                        </tr>
+                        {% else %}
+                        {% for row in rapor %}
+                        <tr>
+                            <td>{{ "%.2f"|format(row.toplam_maliyet if row.toplam_maliyet is not none else 0) }} ₺</td>
+                            <td>{{ "%.2f"|format(row.baslangic_deger if row.baslangic_deger is not none else 0) }} ₺</td>
+                            <td>{{ "%.2f"|format(row.bitis_deger if row.bitis_deger is not none else 0) }} ₺</td>
+                            <td class="{{ 'text-success' if row.kar_zarar and row.kar_zarar > 0 else 'text-danger' if row.kar_zarar and row.kar_zarar < 0 else '' }}">
+                                {{ "%.2f"|format(row.kar_zarar if row.kar_zarar is not none else 0) }} ₺
+                            </td>
+                            <td class="{{ 'text-success' if row.kar_zarar_yuzde and row.kar_zarar_yuzde > 0 else 'text-danger' if row.kar_zarar_yuzde and row.kar_zarar_yuzde < 0 else '' }}">
+                                {{ "%.2f"|format(row.kar_zarar_yuzde if row.kar_zarar_yuzde is not none else 0) }}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hisse İşlemleri -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Hisse İşlemleri</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Hisse</th>
+                            <th>Alım Lot</th>
+                            <th>Alım Tutar</th>
+                            <th>Ort. Alım</th>
+                            <th>Satım Lot</th>
+                            <th>Satım Tutar</th>
+                            <th>Ort. Satım</th>
+                            <th>Kar/Zarar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not islemler %}
+                        <tr>
+                            <td colspan="8" class="text-center">Bu ay için işlem bulunamadı.</td>
+                        </tr>
+                        {% else %}
+                        {% for islem in islemler %}
+                        <tr>
+                            <td>{{ islem.sembol }}</td>
+                            <td>{{ islem.toplam_alim_lot if islem.toplam_alim_lot is not none else 0 }}</td>
+                            <td>{{ "%.2f"|format(islem.toplam_alim_tutar if islem.toplam_alim_tutar is not none else 0) }} ₺</td>
+                            <td>{{ "%.2f"|format(islem.ortalama_alim_fiyat if islem.ortalama_alim_fiyat is not none else 0) }} ₺</td>
+                            <td>{{ islem.toplam_satim_lot if islem.toplam_satim_lot is not none else 0 }}</td>
+                            <td>{{ "%.2f"|format(islem.toplam_satim_tutar if islem.toplam_satim_tutar is not none else 0) }} ₺</td>
+                            <td>{{ "%.2f"|format(islem.ortalama_satim_fiyat if islem.ortalama_satim_fiyat is not none else 0) }} ₺</td>
+                            <td class="{{ 'text-success' if islem.net_kar_zarar and islem.net_kar_zarar > 0 else 'text-danger' if islem.net_kar_zarar and islem.net_kar_zarar < 0 else '' }}">
+                                {{ "%.2f"|format(islem.net_kar_zarar if islem.net_kar_zarar is not none else 0) }} ₺
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
